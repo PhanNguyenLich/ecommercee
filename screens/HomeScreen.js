@@ -20,7 +20,12 @@ import ProductItem from "../components/ProductItem";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useNavigation } from "@react-navigation/native";
 import { useSelector } from "react-redux";
-import { BottomModal } from "react-native-modals";
+import {
+  ModalPortal,
+  BottomModal,
+  SlideAnimation,
+  ModalContent,
+} from "react-native-modals";
 
 const HomeScreen = () => {
   const list = [
@@ -261,7 +266,8 @@ const HomeScreen = () => {
             </Pressable>
             <Feather name="mic" size={24} color="black" />
           </View>
-          <View
+          <Pressable
+            onPress={() => setModalVisible(!modalVisible)}
             style={{
               flexDirection: "row",
               alignItems: "center",
@@ -271,13 +277,13 @@ const HomeScreen = () => {
             }}
           >
             <Ionicons name="location-outline" size={24} color="black" />
-            <Pressable>
+            <Pressable onPress={() => setModalVisible(!modalVisible)}>
               <Text style={{ fontSize: 16, fontWeight: "400" }}>
                 Deliver to Pieo - Ha Tinh
               </Text>
             </Pressable>
             <MaterialIcons name="keyboard-arrow-down" size={24} color="black" />
-          </View>
+          </Pressable>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {list.map((item, index) => (
               <Pressable
@@ -474,7 +480,21 @@ const HomeScreen = () => {
         onBackdropPress={() => setModalVisible(!modalVisible)}
         swipeDirection={["up", "down"]}
         swipeThreshold={200}
-      ></BottomModal>
+        modalAnimation={
+          new SlideAnimation({
+            slideFrom: "bottom",
+          })
+        }
+        onHardwareBackPress={() => setModalVisible(!modalVisible)}
+        visible={modalVisible}
+        onTouchOutside={() => setModalVisible(!modalVisible)}
+      >
+        <ModalContent style={{ width: "100%", height: 400 }}>
+          <View>
+            <Text>Choose your Location</Text>
+          </View>
+        </ModalContent>
+      </BottomModal>
     </>
   );
 };
