@@ -9,10 +9,11 @@ import {
   TextInput,
   Image,
 } from "react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { AntDesign } from "@expo/vector-icons";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
+import { Entypo } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SliderBox } from "react-native-image-slider-box";
 import axios from "axios";
@@ -26,6 +27,9 @@ import {
   SlideAnimation,
   ModalContent,
 } from "react-native-modals";
+import { useAddress } from "../UserContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { jwtDecode } from "jwt-decode";
 
 const HomeScreen = () => {
   const list = [
@@ -34,12 +38,12 @@ const HomeScreen = () => {
       image: "https://m.media-amazon.com/images/I/41EcYoIZhIL._AC_SY400_.jpg",
       name: "Home",
     },
-    {
-      id: "1",
-      image:
-        "https://m.media-amazon.com/images/G/31/img20/Events/Jup21dealsgrid/blockbuster.jpg",
-      name: "Deals",
-    },
+    // {
+    //   id: "1",
+    //   image:
+    //     "https://m.media-amazon.com/images/G/31/img20/Events/Jup21dealsgrid/blockbuster.jpg",
+    //   name: "Deals",
+    // },
     {
       id: "3",
       image:
@@ -52,12 +56,12 @@ const HomeScreen = () => {
         "https://m.media-amazon.com/images/G/31/img20/Events/Jup21dealsgrid/All_Icons_Template_1_icons_01.jpg",
       name: "Mobiles",
     },
-    {
-      id: "5",
-      image:
-        "https://m.media-amazon.com/images/G/31/img20/Events/Jup21dealsgrid/music.jpg",
-      name: "Music",
-    },
+    // {
+    //   id: "5",
+    //   image:
+    //     "https://m.media-amazon.com/images/G/31/img20/Events/Jup21dealsgrid/music.jpg",
+    //   name: "Music",
+    // },
     {
       id: "6",
       image: "https://m.media-amazon.com/images/I/51dZ19miAbL._AC_SY350_.jpg",
@@ -200,6 +204,9 @@ const HomeScreen = () => {
   const [products, setProducts] = useState([]);
   const navigation = useNavigation();
   const [open, setOpen] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const { userId, setUserId } = useAddress();
+  const [selectedAddress, setSelectedAdress] = useState("");
   const [category, setCategory] = useState("jewelery");
   const [items, setItems] = useState([
     { label: "Men's clothing", value: "men's clothing" },
@@ -224,6 +231,34 @@ const HomeScreen = () => {
 
   const cart = useSelector((state) => state.cart.cart);
   const [modalVisible, setModalVisible] = useState(false);
+  useEffect(() => {
+    if (userId) {
+      fetchAddresses();
+    }
+  }, [userId, modalVisible]);
+  const fetchAddresses = async () => {
+    try {
+      const response = await axios.get(
+        `http://192.168.1.11:8000/addresses/${userId}`
+      );
+      const { addresses } = response.data;
+
+      setAddresses(addresses);
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = await AsyncStorage.getItem("authToken");
+      const decodedToken = jwtDecode(token);
+      const userId = decodedToken.userId;
+      setUserId(userId);
+    };
+
+    fetchUser();
+  }, []);
+  console.log("addresses", addresses);
   return (
     <>
       <SafeAreaView
@@ -277,10 +312,16 @@ const HomeScreen = () => {
             }}
           >
             <Ionicons name="location-outline" size={24} color="black" />
-            <Pressable onPress={() => setModalVisible(!modalVisible)}>
-              <Text style={{ fontSize: 16, fontWeight: "400" }}>
-                Deliver to Pieo - Ha Tinh
-              </Text>
+            <Pressable>
+              {selectedAddress ? (
+                <Text>
+                  Deliver to {selectedAddress?.name} - {selectedAddress?.street}
+                </Text>
+              ) : (
+                <Text style={{ fontSize: 13, fontWeight: "500" }}>
+                  Add a Address
+                </Text>
+              )}
             </Pressable>
             <MaterialIcons name="keyboard-arrow-down" size={24} color="black" />
           </Pressable>
@@ -290,12 +331,18 @@ const HomeScreen = () => {
                 key={index}
                 style={{
                   margin: 10,
-                  justifyContent: "center",
+                  flexDirection: "row",
+                  justifyContent: "space-around",
                   alignItems: "center",
                 }}
               >
                 <Image
-                  style={{ width: 50, height: 50, resizeMode: "contain" }}
+                  style={{
+                    width: 50,
+                    height: 50,
+                    resizeMode: "contain",
+                    marginRight: 5,
+                  }}
                   source={{ uri: item.image }}
                 />
                 <Text
@@ -327,6 +374,7 @@ const HomeScreen = () => {
           <View
             style={{
               flexDirection: "row",
+              justifyContent: "space-around",
               alignItems: "center",
               flexWrap: "wrap",
             }}
@@ -460,6 +508,7 @@ const HomeScreen = () => {
           <View
             style={{
               flexDirection: "row",
+              justifyContent: "space-around",
               alignItems: "center",
               flexWrap: "wrap",
             }}
@@ -469,9 +518,6 @@ const HomeScreen = () => {
               .map((item, index) => (
                 <ProductItem item={item} key={index} />
               ))}
-            {products?.map((item, index) => (
-              <ProductItem item={item} key={index} />
-            ))}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -490,8 +536,119 @@ const HomeScreen = () => {
         onTouchOutside={() => setModalVisible(!modalVisible)}
       >
         <ModalContent style={{ width: "100%", height: 400 }}>
-          <View>
-            <Text>Choose your Location</Text>
+          <View style={{ marginBottom: 8 }}>
+            <Text style={{ fontSize: 16, fontWeight: "500" }}>
+              Choose your Location
+            </Text>
+
+            <Text style={{ marginTop: 5, fontSize: 16, color: "gray" }}>
+              Select a delivery location to see product availabilty and delivery
+              options
+            </Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {/* already added address */}
+            {addresses?.map((item, index) => (
+              <Pressable
+                onPress={() => setSelectedAdress(item)}
+                style={{
+                  width: 140,
+                  height: 140,
+                  borderColor: "#D0D0D0",
+                  borderWidth: 1,
+                  padding: 10,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 3,
+                  marginRight: 15,
+                  marginTop: 10,
+                  backgroundColor:
+                    selectedAddress === item ? "#FBCEB1" : "white",
+                }}
+              >
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: "bold" }}>
+                    {item?.name}
+                  </Text>
+                  <Entypo name="location-pin" size={24} color="red" />
+                </View>
+
+                <Text
+                  numberOfLines={1}
+                  style={{ width: 130, fontSize: 13, textAlign: "center" }}
+                >
+                  {item?.houseNo},{item?.landmark}
+                </Text>
+
+                <Text
+                  numberOfLines={1}
+                  style={{ width: 130, fontSize: 13, textAlign: "center" }}
+                >
+                  {item?.street}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={{ width: 130, fontSize: 13, textAlign: "center" }}
+                >
+                  India, Bangalore
+                </Text>
+              </Pressable>
+            ))}
+
+            <Pressable
+              onPress={() => {
+                setModalVisible(false);
+                navigation.navigate("Address");
+              }}
+              style={{
+                width: 140,
+                height: 140,
+                borderColor: "#D0D0D0",
+                marginTop: 10,
+                borderWidth: 1,
+                padding: 10,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: "#0066b2",
+                  fontWeight: "500",
+                }}
+              >
+                Add an address or pick-up point
+              </Text>
+            </Pressable>
+          </ScrollView>
+          <View style={{ flexDirection: "column", gap: 7, marginBottom: 30 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <Entypo name="location-pin" size={22} color="black" />
+              <Text style={{ color: "#0066b2", fontWeight: "400" }}>
+                Enter an VietNam pincode
+              </Text>
+            </View>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <Ionicons name="locate-sharp" size={22} color="black" />
+              <Text style={{ color: "#0066b2", fontWeight: "400" }}>
+                Use My Current location
+              </Text>
+            </View>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <AntDesign name="earth" size={22} color="black" />
+              <Text style={{ color: "#0066b2", fontWeight: "400" }}>
+                Deliver outside VietNam
+              </Text>
+            </View>
           </View>
         </ModalContent>
       </BottomModal>

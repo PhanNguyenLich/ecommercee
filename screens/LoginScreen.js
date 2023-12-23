@@ -15,9 +15,11 @@ import { Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { useLogin } from "../Context/LoginContext";
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { setIsLoggedIn, setProfile } = useLogin();
   const navigation = useNavigation();
   useEffect(() => {
     const checkLoginStatus = async () => {
@@ -28,7 +30,7 @@ const LoginScreen = () => {
           navigation.replace("Main");
         }
       } catch (error) {
-        console.log("Error message");
+        console.log("Error message", error);
       }
     };
     checkLoginStatus();
@@ -40,12 +42,12 @@ const LoginScreen = () => {
     };
 
     axios
-      .post("http://192.168.2.64:3000/login", user)
+      .post("http://192.168.1.11:8000/login", user)
       .then((response) => {
         console.log(response);
         const token = response.data.token;
         AsyncStorage.setItem("authToken", token);
-        navigation.replace("Main");
+        // navigation.replace("Main");
       })
       .catch((error) => {
         Alert.alert("Login error", "Invalid Email");

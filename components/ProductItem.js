@@ -3,9 +3,11 @@ import React, { useState } from "react";
 import { Pressable } from "react-native";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../redux/CartReducer";
+import { useNavigation } from "@react-navigation/native";
 
 const ProductItem = ({ item }) => {
   const [addedToCart, setAddedToCart] = useState(false);
+  const navigation = useNavigation();
   const dispatch = useDispatch();
   const addItemToCart = (item) => {
     setAddedToCart(true);
